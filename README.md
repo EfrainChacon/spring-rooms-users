@@ -109,8 +109,14 @@ com.capgemini.test.code
 - **Patrón Strategy para notificar.** Cada `Role` declara su `NotificationChannel` y cada canal tiene un
   `NotificationSender`. Un canal nuevo (p. ej. push) es una clase nueva, sin tocar el servicio. Si falta la
   estrategia de algún canal, la aplicación no arranca.
-- **Notificación best-effort.** Si el usuario ya está guardado y falla el email/SMS, se registra en el log y se devuelve
-  igualmente el `201`: el alta es correcta. Para garantizar la entrega, el siguiente paso sería un *outbox* transaccional.
+- **Notificación best-effort.** Si el usuario ya está guardado y falla el email/SMS, se registra en el log y se
+  devuelve igualmente el `201`. Ver [Notificaciones: decisión y evolución](#notificaciones-decisión-y-evolución).
+- **409 en todas las validaciones, por contrato.** El enunciado fija `409 Conflict` para cualquier fallo de
+  validación, y así se ha implementado: el contrato con quien consume la API manda, y un cambio así se acuerda, no se
+  impone. En un diseño propio se distinguiría entre `400 Bad Request` / `422 Unprocessable Content` para los datos
+  mal formados (nombre demasiado largo, email sin `@`, rol inexistente: el cliente puede corregirlos) y `409` solo
+  para los conflictos con el estado del sistema (email o DNI ya registrados). Así, un frontend o un cliente
+  automático sabe sin leer el mensaje si debe corregir el formulario o si el recurso ya existe.
 - **409 de negocio frente a 503 técnico.** Un 409 del servicio de DNI es una respuesta de negocio (DNI rechazado →
   409 al cliente). Un timeout o un 5xx es un fallo nuestro (→ 503), no del usuario.
 - **El DNI se envía tal cual.** El servicio externo es la fuente de verdad y distingue mayúsculas (`99999999w` se
@@ -119,6 +125,37 @@ com.capgemini.test.code
 - **El email se normaliza a minúsculas**, para que `Email@x.com` y `email@x.com` cuenten como el mismo usuario.
 - **IDs como string en JSON** (`"id": "1"`), como pide el contrato. Además evita que un cliente JavaScript pierda
   precisión con IDs `long` por encima de 2^53.
+
+### Notificaciones: decisión y evolución
+
+Qué hacer cuando el usuario ya está guardado y falla la notificación es una decisión de negocio: cuánto importa
+avisar en el momento frente a cuánto importa poder dar de alta al usuario. Aquí se ha priorizado el alta: que el
+proveedor de email/SMS esté caído no debe impedir registrar usuarios.
+
+Alternativas descartadas:
+
+- **Devolver un error.** El usuario ya existe, así que el cliente reintentaría y recibiría `409 email duplicado`. La
+  respuesta mentiría sobre el estado real.
+- **Deshacer el alta.** Es coherente, pero haría depender el registro de la disponibilidad de un tercero.
+
+La solución actual (síncrona y best-effort) tiene un coste: si el envío falla, la notificación se pierde y solo queda
+constancia en el log. Es aceptable para el alcance de esta prueba, no para producción.
+
+**Evolución propuesta: notificaciones asíncronas con patrón outbox.**
+
+1. Al dar de alta, en la **misma transacción** que el `INSERT` del usuario, se guarda una fila en una tabla
+   `notification_outbox` (usuario, canal, mensaje, estado `PENDING`, número de intentos, fecha del próximo intento).
+   O se guardan los dos o ninguno: no puede haber un usuario sin su notificación pendiente, ni al revés.
+2. La petición responde `201` sin esperar al proveedor, así que es más rápida y no le afectan sus caídas.
+3. Un proceso en segundo plano (`@Scheduled` o un worker aparte) recoge las filas pendientes, envía y las marca
+   como `SENT`. Si falla, incrementa los intentos y reprograma con espera exponencial; superado un máximo, la fila
+   pasa a `FAILED` para revisarla o generar una alerta.
+4. Con varias réplicas de la aplicación, cada fila se reserva con `SELECT ... FOR UPDATE SKIP LOCKED` para que no
+   se envíe dos veces. La entrega es *al menos una vez*: si el proveedor admite una clave de idempotencia, se usa el
+   ID de la fila del outbox.
+
+El código ya está preparado: `UserNotifier` es el único punto que habría que cambiar (de «enviar» a «encolar»), y los
+`NotificationSender` se reutilizarían tal cual desde el proceso que envía.
 
 ## Problemas del proyecto base y cómo se han resuelto
 
@@ -161,7 +198,9 @@ El informe de Cucumber queda en `target/cucumber-report.html`.
 Siguientes pasos que no se han implementado, para no sobredimensionar la prueba:
 
 - Circuit breaker y reintentos sobre el servicio de DNI (Resilience4j).
-- Outbox transaccional para entregar las notificaciones de forma garantizada y asíncrona.
+- Outbox transaccional para las notificaciones (diseño descrito arriba).
+- Otros documentos de identidad (NIE, pasaporte): un campo de tipo de documento y una normalización por tipo para
+  la unicidad. La validación seguiría delegándose en el servicio externo, enviándole el valor original.
 - Hilos virtuales (Java 21) y réplicas de lectura para el `GET`.
 - Caché de las respuestas de DNI.
 - Métricas Micrometer/Prometheus.
