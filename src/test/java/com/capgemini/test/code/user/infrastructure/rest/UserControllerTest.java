@@ -44,20 +44,20 @@ class UserControllerTest {
   void post_devuelve_201_con_el_id_como_string_y_location() throws Exception {
     when(createUserUseCase.create(any())).thenReturn(1L);
 
-    mvc.perform(post("/api/v1/rooms/1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
+    mvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
         .andExpect(status().isCreated())
-        .andExpect(header().string("Location", "http://localhost/api/v1/rooms/1/users/1"))
+        .andExpect(header().string("Location", "http://localhost/api/v1/users/1"))
         .andExpect(jsonPath("$.id").value("1"));
 
     verify(createUserUseCase).create(
-        new CreateUserCommand(1L, "pablo", "email@email.com", "677998899", "admin", "23454234W"));
+        new CreateUserCommand("pablo", "email@email.com", "677998899", "admin", "23454234W"));
   }
 
   @Test
   void una_validacion_fallida_devuelve_409_con_el_formato_del_contrato() throws Exception {
     when(createUserUseCase.create(any())).thenThrow(new UserValidationException("userName"));
 
-    mvc.perform(post("/api/v1/rooms/1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
+    mvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.code").value(409))
         .andExpect(jsonPath("$.message").value("error validation userName"));
@@ -67,7 +67,7 @@ class UserControllerTest {
   void un_dni_rechazado_devuelve_409() throws Exception {
     when(createUserUseCase.create(any())).thenThrow(new DniRejectedException());
 
-    mvc.perform(post("/api/v1/rooms/1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
+    mvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.message").value("error validation dni"));
   }
@@ -76,24 +76,24 @@ class UserControllerTest {
   void si_cae_un_servicio_externo_devuelve_503() throws Exception {
     when(createUserUseCase.create(any())).thenThrow(new ExternalServiceException("dni", new RuntimeException()));
 
-    mvc.perform(post("/api/v1/rooms/1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
+    mvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content(BODY))
         .andExpect(status().isServiceUnavailable())
         .andExpect(jsonPath("$.code").value(503));
   }
 
   @Test
   void un_json_mal_formado_devuelve_400() throws Exception {
-    mvc.perform(post("/api/v1/rooms/1/users").contentType(MediaType.APPLICATION_JSON).content("{\"name\":"))
+    mvc.perform(post("/api/v1/users").contentType(MediaType.APPLICATION_JSON).content("{\"name\":"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.code").value(400));
   }
 
   @Test
   void get_devuelve_el_usuario() throws Exception {
-    when(getUserUseCase.get(1L, 7L))
+    when(getUserUseCase.get(7L))
         .thenReturn(new User(7L, "pablo", "email@email.com", "677998899", Role.SUPERADMIN, "23454234W", 1L));
 
-    mvc.perform(get("/api/v1/rooms/1/users/7"))
+    mvc.perform(get("/api/v1/users/7"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value("7"))
         .andExpect(jsonPath("$.name").value("pablo"))
@@ -103,16 +103,16 @@ class UserControllerTest {
 
   @Test
   void get_de_un_usuario_inexistente_devuelve_404() throws Exception {
-    when(getUserUseCase.get(1L, 7L)).thenThrow(new UserNotFoundException(1L, 7L));
+    when(getUserUseCase.get(7L)).thenThrow(new UserNotFoundException(7L));
 
-    mvc.perform(get("/api/v1/rooms/1/users/7"))
+    mvc.perform(get("/api/v1/users/7"))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.code").value(404));
   }
 
   @Test
   void un_metodo_no_soportado_conserva_su_codigo() throws Exception {
-    mvc.perform(delete("/api/v1/rooms/1/users/7"))
+    mvc.perform(delete("/api/v1/users/7"))
         .andExpect(status().isMethodNotAllowed())
         .andExpect(jsonPath("$.code").value(405));
   }

@@ -17,7 +17,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"pablo\",\n  \"email\": \"email@email.com\",\n  \"phone\": \"677998899\",\n  \"rol\": \"admin\",\n  \"dni\": \"23454234W\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
@@ -26,7 +26,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"ana\",\n  \"email\": \"ana@email.com\",\n  \"phone\": \"600111222\",\n  \"rol\": \"superadmin\",\n  \"dni\": \"11111111H\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
@@ -35,7 +35,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"EMAIL@email.com\",\n  \"phone\": \"600000001\",\n  \"rol\": \"admin\",\n  \"dni\": \"22222222J\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
@@ -44,7 +44,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"pablito\",\n  \"email\": \"pablito@email.com\",\n  \"phone\": \"600000002\",\n  \"rol\": \"admin\",\n  \"dni\": \"33333333P\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
@@ -53,7 +53,7 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"pepe@email.com\",\n  \"phone\": \"600000003\",\n  \"rol\": \"user\",\n  \"dni\": \"44444444A\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
@@ -62,15 +62,15 @@
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"pepe@email.com\",\n  \"phone\": \"600000003\",\n  \"rol\": \"admin\",\n  \"dni\": \"99999999w\"\n}" },
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users" }
           }
         },
         {
-          "name": "Obtener el usuario 1 de la sala 1",
+          "name": "Obtener el usuario 1",
           "request": {
             "method": "GET",
             "header": [],
-            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users/1" }
+            "url": { "raw": "{{baseUrl}}/api/v1/users/1" }
           }
         }
       ]

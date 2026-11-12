@@ -13,11 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
- * Usuarios como sub-recurso de la sala: el enunciado trabaja sobre la sala 1 ({@code /rooms/1/users}),
- * pero la ruta ya admite cualquier sala sin cambiar el contrato.
+ * El cliente no elige sala: el servidor asigna la sala 1 (ver README, «Ambigüedad del enunciado»).
  */
 @RestController
-@RequestMapping("/api/v1/rooms/{roomId}/users")
+@RequestMapping("/api/v1/users")
 public class UserController {
 
   private final CreateUserUseCase createUserUseCase;
@@ -29,14 +28,14 @@ public class UserController {
   }
 
   @PostMapping
-  public ResponseEntity<CreateUserResponse> create(@PathVariable long roomId, @RequestBody CreateUserRequest request) {
-    long id = createUserUseCase.create(request.toCommand(roomId));
+  public ResponseEntity<CreateUserResponse> create(@RequestBody CreateUserRequest request) {
+    long id = createUserUseCase.create(request.toCommand());
     URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
     return ResponseEntity.created(location).body(new CreateUserResponse(String.valueOf(id)));
   }
 
   @GetMapping("/{userId}")
-  public UserResponse get(@PathVariable long roomId, @PathVariable long userId) {
-    return UserResponse.from(getUserUseCase.get(roomId, userId));
+  public UserResponse get(@PathVariable long userId) {
+    return UserResponse.from(getUserUseCase.get(userId));
   }
 }

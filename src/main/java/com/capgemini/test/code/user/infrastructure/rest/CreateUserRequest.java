@@ -4,7 +4,7 @@ import com.capgemini.test.code.user.application.port.in.CreateUserCommand;
 
 public record CreateUserRequest(String name, String email, String phone, String rol, String dni) {
 
-  CreateUserCommand toCommand(long roomId) {
-    return new CreateUserCommand(roomId, name, email, phone, rol, dni);
+  CreateUserCommand toCommand() {
+    return new CreateUserCommand(name, email, phone, rol, dni);
   }
 }

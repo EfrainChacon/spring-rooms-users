@@ -1,7 +1,6 @@
 package com.capgemini.test.code.shared.infrastructure.rest;
 
 import com.capgemini.test.code.user.application.port.out.ExternalServiceException;
-import com.capgemini.test.code.user.domain.exception.RoomNotFoundException;
 import com.capgemini.test.code.user.domain.exception.UserNotFoundException;
 import com.capgemini.test.code.user.domain.exception.UserValidationException;
 import org.slf4j.Logger;
@@ -27,8 +26,8 @@ public class GlobalExceptionHandler {
     return error(HttpStatus.CONFLICT, e.getMessage());
   }
 
-  @ExceptionHandler({UserNotFoundException.class, RoomNotFoundException.class})
-  ResponseEntity<ApiError> notFound(RuntimeException e) {
+  @ExceptionHandler(UserNotFoundException.class)
+  ResponseEntity<ApiError> notFound(UserNotFoundException e) {
     return error(HttpStatus.NOT_FOUND, e.getMessage());
   }
 

@@ -7,6 +7,7 @@ import com.capgemini.test.code.user.application.port.out.UserRepository;
 import com.capgemini.test.code.user.application.service.UserNotifier;
 import com.capgemini.test.code.user.application.service.UserService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,9 +20,16 @@ public class UserModuleConfig {
     return new UserNotifier(senders);
   }
 
+  /**
+   * La sala por defecto es configuración del servidor. Si no existe en la BD, la aplicación no arranca: es un
+   * error de despliegue y no debe llegar al cliente como un 404 en cada petición.
+   */
   @Bean
-  UserService userService(UserRepository userRepository, RoomRepository roomRepository,
-      DniVerifier dniVerifier, UserNotifier userNotifier) {
-    return new UserService(userRepository, roomRepository, dniVerifier, userNotifier);
+  UserService userService(UserRepository userRepository, RoomRepository roomRepository, DniVerifier dniVerifier,
+      UserNotifier userNotifier, @Value("${app.users.default-room-id}") long defaultRoomId) {
+    if (!roomRepository.existsById(defaultRoomId)) {
+      throw new IllegalStateException("La sala por defecto " + defaultRoomId + " no existe en la base de datos");
+    }
+    return new UserService(userRepository, dniVerifier, userNotifier, defaultRoomId);
   }
 }

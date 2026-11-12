@@ -4,5 +4,6 @@ import com.capgemini.test.code.user.domain.model.User;
 
 public interface GetUserUseCase {
 
-  User get(long roomId, long userId);
+  /** Busca el usuario dentro de la sala por defecto; un usuario de otra sala no se encuentra. */
+  User get(long userId);
 }

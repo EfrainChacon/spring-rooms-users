@@ -28,6 +28,12 @@ external:
   service:
     url: ${EXTERNAL_SERVICE_URL:http://localhost:1080}
 
+app:
+  users:
+    # Sala en la que el servidor da de alta y busca usuarios (el enunciado fija la sala 1).
+    # Si no existe en la BD, la aplicación no arranca.
+    default-room-id: ${DEFAULT_ROOM_ID:1}
+
 management:
   endpoints:
     web:

@@ -28,17 +28,31 @@ O todo en contenedores, sin Java local: `cd docker && docker compose --profile a
 
 | Método | Ruta | Respuesta |
 |---|---|---|
-| `POST` | `/api/v1/rooms/{roomId}/users` | `201` `{"id": "1"}` + cabecera `Location` |
-| `GET` | `/api/v1/rooms/{roomId}/users/{userId}` | `200` con el usuario |
+| `POST` | `/api/v1/users` | `201` `{"id": "1"}` + cabecera `Location` |
+| `GET` | `/api/v1/users/{userId}` | `200` con el usuario |
 
-El enunciado trabaja sobre la sala 1 (`/api/v1/rooms/1/users`); la ruta ya admite cualquier sala existente.
+El cliente no elige sala: el servidor da de alta y busca los usuarios en la sala 1 (propiedad
+`app.users.default-room-id`). Un usuario de otra sala no se encuentra (`404`).
 
 ```bash
-curl -i -X POST localhost:8080/api/v1/rooms/1/users -H 'Content-Type: application/json' \
+curl -i -X POST localhost:8080/api/v1/users -H 'Content-Type: application/json' \
   -d '{"name":"pablo","email":"email@email.com","phone":"677998899","rol":"admin","dni":"23454234W"}'
 
-curl localhost:8080/api/v1/rooms/1/users/1
+curl localhost:8080/api/v1/users/1
 ```
+
+### Ambigüedad del enunciado: ¿quién elige la sala?
+
+El enunciado dice «guarda un usuario en la sala 1» y «obtiene un usuario dentro de la sala 1», pero también que la
+aplicación «debe gestionar salas y usuarios». Admite dos lecturas:
+
+1. **La sala la asigna el servidor:** los usuarios entran siempre en la sala 1 y el cliente no la envía.
+2. **La sala es un parámetro** (`/rooms/{roomId}/users`) y la prueba solo usa la sala 1.
+
+Se ha implementado la lectura 1, por ser la más literal: no se añade al contrato nada que no se pida. La sala no
+está escrita en el código sino en configuración, y la aplicación no arranca si esa sala no existe. **En un proyecto
+real, este requisito se aclararía con negocio antes de implementarlo.** Si la respuesta fuera la lectura 2, el
+cambio se limita al controlador y a la firma de los casos de uso.
 
 Todos los errores comparten el formato `{"code": <http>, "message": "<texto>"}`:
 
@@ -49,7 +63,7 @@ Todos los errores comparten el formato `{"code": <http>, "message": "<texto>"}`:
 | Rol distinto de `admin` / `superadmin` | 409 | `error validation rol` |
 | DNI rechazado por el servicio externo, o ya registrado | 409 | `error validation dni` |
 | Teléfono vacío o ya registrado | 409 | `error validation phone` |
-| Sala o usuario inexistente | 404 | `room 99 not found` / `user 7 not found in room 1` |
+| Usuario inexistente o de otra sala | 404 | `user 7 not found` |
 | JSON mal formado o ID no numérico | 400 | `malformed request` |
 | El servicio de DNI no responde | 503 | `dni service unavailable` |
 
@@ -101,7 +115,7 @@ com.capgemini.test.code
   `UserService` se crea en `UserModuleConfig` y se prueba con mocks sencillos. JPA y Feign viven solo en los adaptadores.
 - **Un `User` inválido no puede existir.** Las reglas se comprueban en el constructor del record; el resto del
   código no vuelve a validar.
-- **Comprobaciones de la más barata a la más cara:** formato (memoria), luego sala y email (BD) y por último el
+- **Comprobaciones de la más barata a la más cara:** formato (memoria), luego email (BD) y por último el
   DNI (red). No se llama al servicio externo con peticiones que se iban a rechazar igualmente.
 - **La BD garantiza la unicidad.** La comprobación previa del email da el mensaje correcto en el caso normal. Con dos
   peticiones concurrentes, la restricción `UNIQUE` hace de última barrera y el adaptador traduce su error a

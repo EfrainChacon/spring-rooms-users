@@ -15,10 +15,8 @@ import static org.mockito.Mockito.when;
 import com.capgemini.test.code.user.application.port.in.CreateUserCommand;
 import com.capgemini.test.code.user.application.port.out.DniVerifier;
 import com.capgemini.test.code.user.application.port.out.ExternalServiceException;
-import com.capgemini.test.code.user.application.port.out.RoomRepository;
 import com.capgemini.test.code.user.application.port.out.UserRepository;
 import com.capgemini.test.code.user.domain.exception.DniRejectedException;
-import com.capgemini.test.code.user.domain.exception.RoomNotFoundException;
 import com.capgemini.test.code.user.domain.exception.UserAlreadyExistsException;
 import com.capgemini.test.code.user.domain.exception.UserNotFoundException;
 import com.capgemini.test.code.user.domain.exception.UserValidationException;
@@ -35,12 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-  private static final long ROOM_ID = 1L;
+  private static final long DEFAULT_ROOM_ID = 1L;
 
   @Mock
   private UserRepository userRepository;
-  @Mock
-  private RoomRepository roomRepository;
   @Mock
   private DniVerifier dniVerifier;
   @Mock
@@ -50,16 +46,15 @@ class UserServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new UserService(userRepository, roomRepository, dniVerifier, userNotifier);
+    service = new UserService(userRepository, dniVerifier, userNotifier, DEFAULT_ROOM_ID);
   }
 
   private static CreateUserCommand command(String name, String rol) {
-    return new CreateUserCommand(ROOM_ID, name, "email@email.com", "677998899", rol, "23454234W");
+    return new CreateUserCommand(name, "email@email.com", "677998899", rol, "23454234W");
   }
 
   @Test
-  void guarda_notifica_y_devuelve_el_id() {
-    when(roomRepository.existsById(ROOM_ID)).thenReturn(true);
+  void guarda_en_la_sala_por_defecto_notifica_y_devuelve_el_id() {
     when(userRepository.existsByEmail("email@email.com")).thenReturn(false);
     when(dniVerifier.isValid("23454234W")).thenReturn(true);
     when(userRepository.save(any())).thenAnswer(invocation -> invocation.<User>getArgument(0).withId(42L));
@@ -69,7 +64,7 @@ class UserServiceTest {
     assertThat(id).isEqualTo(42L);
     InOrder order = inOrder(dniVerifier, userRepository, userNotifier);
     order.verify(dniVerifier).isValid("23454234W");
-    order.verify(userRepository).save(any());
+    order.verify(userRepository).save(argThat(u -> u.roomId() == DEFAULT_ROOM_ID));
     order.verify(userNotifier).notifyUserSaved(argThat(u -> u.id() == 42L));
   }
 
@@ -79,7 +74,7 @@ class UserServiceTest {
         .isInstanceOf(UserValidationException.class)
         .hasMessage("error validation userName");
 
-    verifyNoInteractions(roomRepository, userRepository, dniVerifier, userNotifier);
+    verifyNoInteractions(userRepository, dniVerifier, userNotifier);
   }
 
   @Test
@@ -87,22 +82,11 @@ class UserServiceTest {
     assertThatThrownBy(() -> service.create(command("pablo", "user")))
         .hasMessage("error validation rol");
 
-    verifyNoInteractions(roomRepository, userRepository, dniVerifier, userNotifier);
-  }
-
-  @Test
-  void falla_si_la_sala_no_existe() {
-    when(roomRepository.existsById(ROOM_ID)).thenReturn(false);
-
-    assertThatThrownBy(() -> service.create(command("pablo", "admin")))
-        .isInstanceOf(RoomNotFoundException.class);
-
     verifyNoInteractions(userRepository, dniVerifier, userNotifier);
   }
 
   @Test
   void un_email_existente_se_rechaza_sin_llamar_al_servicio_de_dni() {
-    when(roomRepository.existsById(ROOM_ID)).thenReturn(true);
     when(userRepository.existsByEmail("email@email.com")).thenReturn(true);
 
     assertThatThrownBy(() -> service.create(command("pablo", "admin")))
@@ -115,7 +99,6 @@ class UserServiceTest {
 
   @Test
   void un_dni_rechazado_no_se_guarda_ni_se_notifica() {
-    when(roomRepository.existsById(ROOM_ID)).thenReturn(true);
     when(userRepository.existsByEmail(anyString())).thenReturn(false);
     when(dniVerifier.isValid("23454234W")).thenReturn(false);
 
@@ -129,7 +112,6 @@ class UserServiceTest {
 
   @Test
   void si_el_servicio_de_dni_cae_no_se_guarda_nada() {
-    when(roomRepository.existsById(ROOM_ID)).thenReturn(true);
     when(userRepository.existsByEmail(anyString())).thenReturn(false);
     when(dniVerifier.isValid(anyString())).thenThrow(new ExternalServiceException("dni", new RuntimeException()));
 
@@ -140,17 +122,19 @@ class UserServiceTest {
   }
 
   @Test
-  void obtiene_un_usuario_de_la_sala() {
-    User stored = new User(5L, "pablo", "a@b.com", "600", Role.SUPERADMIN, "1X", ROOM_ID);
-    when(userRepository.findByIdAndRoomId(5L, ROOM_ID)).thenReturn(Optional.of(stored));
+  void obtiene_un_usuario_de_la_sala_por_defecto() {
+    User stored = new User(5L, "pablo", "a@b.com", "600", Role.SUPERADMIN, "1X", DEFAULT_ROOM_ID);
+    when(userRepository.findByIdAndRoomId(5L, DEFAULT_ROOM_ID)).thenReturn(Optional.of(stored));
 
-    assertThat(service.get(ROOM_ID, 5L)).isEqualTo(stored);
+    assertThat(service.get(5L)).isEqualTo(stored);
   }
 
   @Test
-  void falla_si_el_usuario_no_esta_en_la_sala() {
+  void falla_si_el_usuario_no_esta_en_la_sala_por_defecto() {
     when(userRepository.findByIdAndRoomId(anyLong(), anyLong())).thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> service.get(ROOM_ID, 5L)).isInstanceOf(UserNotFoundException.class);
+    assertThatThrownBy(() -> service.get(5L))
+        .isInstanceOf(UserNotFoundException.class)
+        .hasMessage("user 5 not found");
   }
 }

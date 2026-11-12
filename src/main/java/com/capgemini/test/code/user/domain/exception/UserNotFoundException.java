@@ -4,7 +4,7 @@ import com.capgemini.test.code.shared.domain.DomainException;
 
 public class UserNotFoundException extends DomainException {
 
-  public UserNotFoundException(long roomId, long userId) {
-    super("user " + userId + " not found in room " + roomId);
+  public UserNotFoundException(long userId) {
+    super("user " + userId + " not found");
   }
 }

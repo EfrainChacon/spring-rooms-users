@@ -19,6 +19,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 /** Pasos de los .feature. Cucumber crea una instancia por escenario, así que el estado no se comparte. */
 public class UserSteps {
 
+  private static final String USERS = "/api/v1/users";
+
   @Autowired
   private TestRestTemplate http;
   @Autowired
@@ -37,30 +39,39 @@ public class UserSteps {
     mockServer.clearRequestLog();
   }
 
-  @Dado("que existe en la sala {long} el usuario:")
-  public void existeElUsuario(long roomId, DataTable user) throws Exception {
-    doyDeAlta(roomId, user);
+  @Dado("que existe el usuario:")
+  public void existeElUsuario(DataTable user) throws Exception {
+    doyDeAlta(user);
     assertThat(response.getStatusCode().value()).isEqualTo(201);
     mockServer.clearRequestLog();
   }
 
-  @Cuando("doy de alta en la sala {long} al usuario:")
-  public void doyDeAlta(long roomId, DataTable user) throws Exception {
+  @Dado("que en la sala {long} hay un usuario guardado")
+  public void hayUnUsuarioEnOtraSala(long roomId) {
+    Long id = jdbc.queryForObject(
+        "INSERT INTO users (name, email, dni, phone, role, room_id) "
+            + "VALUES ('otro', 'otro@email.com', '11111111H', '600000000', 'ADMIN', ?) RETURNING id",
+        Long.class, roomId);
+    lastCreatedId = String.valueOf(id);
+  }
+
+  @Cuando("doy de alta al usuario:")
+  public void doyDeAlta(DataTable user) throws Exception {
     Map<String, String> body = user.asMaps().get(0);
-    response = http.postForEntity("/api/v1/rooms/{roomId}/users", body, String.class, roomId);
+    response = http.postForEntity(USERS, body, String.class);
     if (response.getStatusCode().value() == 201) {
       lastCreatedId = json.readTree(response.getBody()).get("id").asText();
     }
   }
 
-  @Cuando("consulto ese usuario en la sala {long}")
-  public void consultoEseUsuario(long roomId) {
-    response = http.getForEntity("/api/v1/rooms/{roomId}/users/{id}", String.class, roomId, lastCreatedId);
+  @Cuando("consulto ese usuario")
+  public void consultoEseUsuario() {
+    response = http.getForEntity(USERS + "/{id}", String.class, lastCreatedId);
   }
 
-  @Cuando("consulto el usuario {long} en la sala {long}")
-  public void consultoElUsuario(long userId, long roomId) {
-    response = http.getForEntity("/api/v1/rooms/{roomId}/users/{id}", String.class, roomId, userId);
+  @Cuando("consulto el usuario {long}")
+  public void consultoElUsuario(long userId) {
+    response = http.getForEntity(USERS + "/{id}", String.class, userId);
   }
 
   @Entonces("la respuesta tiene el código {int}")
@@ -85,6 +96,12 @@ public class UserSteps {
     JsonNode user = json.readTree(response.getBody());
     expected.asMaps().get(0).forEach((field, value) -> assertThat(user.get(field).asText()).as(field).isEqualTo(value));
     assertThat(user.get("id").asText()).isEqualTo(lastCreatedId);
+  }
+
+  @Entonces("el usuario queda guardado en la sala {long}")
+  public void quedaEnLaSala(long roomId) {
+    Long room = jdbc.queryForObject("SELECT room_id FROM users WHERE id = ?", Long.class, Long.valueOf(lastCreatedId));
+    assertThat(room).isEqualTo(roomId);
   }
 
   @Entonces("se ha enviado un email a {string} con el mensaje {string}")
