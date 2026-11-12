@@ -1,121 +1,120 @@
 {
-	"info": {
-		"_postman_id": "84b7591b-9e7d-413c-a383-ca81a4799134",
-		"name": "capgemini",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "valid dni",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"dni\": \"222222\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:1080/check-dni",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "1080",
-					"path": [
-						"check-dni"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "invalid dni",
-			"request": {
-				"method": "PATCH",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"dni\": \"99999999w\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:1080/check-dni",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "1080",
-					"path": [
-						"check-dni"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "email",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"message\": \"message\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:1080/email",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "1080",
-					"path": [
-						"email"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "sms",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n    \"dni\": \"222222\"\n}",
-					"options": {
-						"raw": {
-							"language": "json"
-						}
-					}
-				},
-				"url": {
-					"raw": "http://localhost:1080/check-dni",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "1080",
-					"path": [
-						"check-dni"
-					]
-				}
-			},
-			"response": []
-		}
-	]
+  "info": {
+    "name": "capgemini",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "mockUrl", "value": "http://localhost:1080" }
+  ],
+  "item": [
+    {
+      "name": "Aplicación",
+      "item": [
+        {
+          "name": "Crear usuario admin (201, notifica por email)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pablo\",\n  \"email\": \"email@email.com\",\n  \"phone\": \"677998899\",\n  \"rol\": \"admin\",\n  \"dni\": \"23454234W\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Crear usuario superadmin (201, notifica por SMS)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"ana\",\n  \"email\": \"ana@email.com\",\n  \"phone\": \"600111222\",\n  \"rol\": \"superadmin\",\n  \"dni\": \"11111111H\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Crear con email repetido (409 email)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"EMAIL@email.com\",\n  \"phone\": \"600000001\",\n  \"rol\": \"admin\",\n  \"dni\": \"22222222J\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Crear con nombre de más de 6 caracteres (409 userName)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pablito\",\n  \"email\": \"pablito@email.com\",\n  \"phone\": \"600000002\",\n  \"rol\": \"admin\",\n  \"dni\": \"33333333P\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Crear con rol inválido (409 rol)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"pepe@email.com\",\n  \"phone\": \"600000003\",\n  \"rol\": \"user\",\n  \"dni\": \"44444444A\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Crear con DNI rechazado por el servicio (409 dni)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"pepe\",\n  \"email\": \"pepe@email.com\",\n  \"phone\": \"600000003\",\n  \"rol\": \"admin\",\n  \"dni\": \"99999999w\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users" }
+          }
+        },
+        {
+          "name": "Obtener el usuario 1 de la sala 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/rooms/1/users/1" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "MockServer",
+      "item": [
+        {
+          "name": "valid dni",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"dni\": \"222222\"\n}" },
+            "url": { "raw": "{{mockUrl}}/check-dni" }
+          }
+        },
+        {
+          "name": "invalid dni",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"dni\": \"99999999w\"\n}" },
+            "url": { "raw": "{{mockUrl}}/check-dni" }
+          }
+        },
+        {
+          "name": "email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"email@email.com\",\n  \"message\": \"usuario guardado\"\n}" },
+            "url": { "raw": "{{mockUrl}}/email" }
+          }
+        },
+        {
+          "name": "sms",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"phone\": \"677998899\",\n  \"message\": \"usuario guardado\"\n}" },
+            "url": { "raw": "{{mockUrl}}/sms" }
+          }
+        }
+      ]
+    }
+  ]
 }
