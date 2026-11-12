@@ -1,8 +1,12 @@
-version: '3.8'
-
+# Infraestructura local. `docker compose up -d` levanta solo PostgreSQL y MockServer (para ejecutar
+# la app desde el IDE o con ./mvnw spring-boot:run). `docker compose --profile app up -d --build`
+# levanta también la aplicación en un contenedor.
+#
+# Las imágenes van fijadas a una versión: con `latest`, postgres pasó a la 18, que cambia la ruta de
+# datos y el contenedor entra en bucle de reinicios con el volumen en /var/lib/postgresql/data.
 services:
   mockserver:
-    image: mockserver/mockserver:latest
+    image: mockserver/mockserver:5.15.0
     container_name: mockserver
     ports:
       - "1080:1080"
@@ -10,12 +14,12 @@ services:
       MOCKSERVER_LOG_LEVEL: INFO
       MOCKSERVER_INITIALIZATION_JSON_PATH: /config/init.json
     volumes:
-      - ./mockserver-config:/config
+      - ./mockserver-config:/config:ro
 
   postgres:
-    image: postgres:latest
+    image: postgres:15-alpine  # la más alta soportada por Flyway 9.22 (el que gestiona Boot 3.2)
     container_name: postgres_db
-    restart: always
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -24,6 +28,29 @@ services:
       POSTGRES_DB: users
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d users"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    profiles: ["app"]
+    build:
+      context: ..
+    container_name: users_app
+    ports:
+      - "${APP_PORT:-8080}:8080"   # APP_PORT=8089 docker compose ... si el 8080 está ocupado
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/users
+      DB_USERNAME: user
+      DB_PASSWORD: password
+      EXTERNAL_SERVICE_URL: http://mockserver:1080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mockserver:
+        condition: service_started
 
 volumes:
   postgres_data:

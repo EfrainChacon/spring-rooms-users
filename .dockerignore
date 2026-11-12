@@ -1,0 +1,7 @@
+target/
+docker/
+postman/
+docs/
+.git/
+.idea/
+.vscode/

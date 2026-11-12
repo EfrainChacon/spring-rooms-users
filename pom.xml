@@ -7,39 +7,40 @@
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
     <version>3.2.0</version>
+    <relativePath/>
   </parent>
   <groupId>com.capgemini.test</groupId>
   <artifactId>code</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>code</name>
+  <description>Gestión de salas y usuarios</description>
 
   <properties>
     <java.version>17</java.version>
-    <spring-boot.version>3.2.0</spring-boot.version>
     <spring-cloud.version>2023.0.0</spring-cloud.version>
-    <flyway.version>9.22.3</flyway.version>
+    <springdoc.version>2.3.0</springdoc.version>
+    <cucumber.version>7.15.0</cucumber.version>
+    <!-- Docker Engine 29 exige la API >= 1.44: la 1.19.x que trae Boot 3.2.0 ya no conecta. -->
+    <testcontainers.version>1.21.4</testcontainers.version>
   </properties>
+
   <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
-    <!-- Flyway (Migraciones de BD) -->
+    <!-- Versión gestionada por Spring Boot -->
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
-      <!-- Spring Boot maneja la versión automáticamente, pero puedes especificarla -->
-      <version>${flyway.version}</version>
-    </dependency>
-    <!-- Lombok (opcional) -->
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
@@ -47,16 +48,66 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
+      <groupId>org.springframework.cloud</groupId>
+      <artifactId>spring-cloud-starter-openfeign</artifactId>
+    </dependency>
+    <!-- El cliente HTTP por defecto de Feign (HttpURLConnection) no admite PATCH, que es lo que usa /check-dni -->
+    <dependency>
+      <groupId>io.github.openfeign</groupId>
+      <artifactId>feign-okhttp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-openfeign</artifactId>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mockserver</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <version>${cucumber.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-spring</artifactId>
+      <version>${cucumber.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-junit-platform-engine</artifactId>
+      <version>${cucumber.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -68,14 +119,37 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+      <!-- mvn test: solo pruebas unitarias y de slice (rápidas, sin Docker) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludeJUnit5Engines>cucumber</excludeJUnit5Engines>
+        </configuration>
+      </plugin>
+      <!-- mvn verify: además integración (*IT) y aceptación (Cucumber), con Testcontainers -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <excludeJUnit5Engines>cucumber</excludeJUnit5Engines>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
-
-
 </project>
